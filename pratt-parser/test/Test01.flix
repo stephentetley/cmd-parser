@@ -20,5 +20,14 @@ pub mod Test01 {
         let ans = PrattParser.ExpressionParser.parse(xs);
         println(ans)
 
+    @Test 
+    pub def test02(): Unit \ IO = 
+        let xs = 
+            Token.Literal(LiteralKind.Integer, "1") ::
+            Token.Symbol("*") :: 
+            Token.Literal(LiteralKind.Integer, "2") ::
+            Nil ;
+        let ans = PrattParser.ExpressionParser2.parse(xs);
+        println(ans)
 
 }

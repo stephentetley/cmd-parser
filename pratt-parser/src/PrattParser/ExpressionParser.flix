@@ -5,7 +5,7 @@
  * that can be found in the LICENSE.md file.
  */
 
-//  Translation of Luyu Chung and Lionel Parreaux's Pratt expssion parser to Flix
+//  Translation of Luyu Chung and Lionel Parreaux's Pratt expression parser to Flix
 
 pub mod PrattParser.ExpressionParser {
 
