@@ -17,7 +17,7 @@ pub mod PrattParser.ExpressionParser2 {
     use PrattParser.ExpressionParser.Tree
 
 
-    pub def operatorTable(): Map[String, Operator] = 
+    def operatorTable(): Map[String, Operator] = 
         let ops = 
             ("+" , { name = "+" , lbp = 3, rbp = 4, unary = true }) ::
             ("-" , { name = "-" , lbp = 3, rbp = 4, unary = true }) :: 
@@ -27,20 +27,17 @@ pub mod PrattParser.ExpressionParser2 {
             Nil;
         List.toMap(ops)
 
-    pub def op(name: String): Option[Operator] = 
-        Map.get(name, operatorTable())
-
-
-    pub def prefixPower(): Int32 = 9
-
 
     pub eff Parse {
         def peek(): Option[Token]
         def consume(): Unit
+        def prefixPower(): Int32
+        def op(name: String): Option[Operator]
     }
 
     def handle(tokens: List[Token], f: a -> b \ ef): a -> b \ ef - Parse = x -> region rc {
-        let currentTokens = Ref.fresh(rc, tokens); 
+        let currentTokens = Ref.fresh(rc, tokens);
+        let operators = operatorTable(); 
         run {
             f(x)
         } with handler Parse {
@@ -56,6 +53,10 @@ pub mod PrattParser.ExpressionParser2 {
                 };
                 k()
             }
+            
+            def prefixPower(k) = k(9)
+            
+            def op(name, k) = k(Map.get(name, operators))
         }
     }
 
@@ -74,7 +75,7 @@ pub mod PrattParser.ExpressionParser2 {
 
 
     def exprCont(acc: Tree, bpc: Int32): Tree \ Parse = match Parse.peek() {
-        case Some(Token.Symbol(name)) => match op(name)  {
+        case Some(Token.Symbol(name)) => match Parse.op(name)  {
             case Some({ lbp, rbp | _}) if lbp > bpc => {
                 Parse.consume();
                 exprCont(Tree.Application(Tree.Reference(name), acc :: expr(rbp) :: Nil), bpc)
@@ -93,10 +94,10 @@ pub mod PrattParser.ExpressionParser2 {
             Parse.consume();
             exprCont(Tree.Reference(name), bp)
         }
-        case Some(Token.Symbol(name)) => match op(name) {
+        case Some(Token.Symbol(name)) => match Parse.op(name) {
             case Some({ unary | _}) if unary => {
                 Parse.consume();
-                exprCont(Tree.Application(Tree.Reference(name), expr(prefixPower()) :: Nil), bp)
+                exprCont(Tree.Application(Tree.Reference(name), expr(Parse.prefixPower()) :: Nil), bp)
             }
             case _ => Tree.Error(None, "Unexpected token ${Token.Symbol(name)}")
         }
