@@ -6,6 +6,7 @@
  */
 
 //  Translation of Luyu Chung and Lionel Parreaux's Pratt expression parser to Flix
+// Uses effects
 
 pub mod PrattParser.ExpressionParser2 {
 
@@ -74,48 +75,45 @@ pub mod PrattParser.ExpressionParser2 {
 
     def exprCont(acc: Tree, bpc: Int32): Tree \ Parse = match Parse.peek() {
         case Some(Token.Symbol(name)) => match op(name)  {
-                    case Some({ lbp, rbp | _}) if lbp > bpc => {
-                        Parse.consume();
-                        exprCont(Tree.Application(Tree.Reference(name), acc :: expr(rbp) :: Nil), bpc)
-                    }
-                    case _ => acc
-                }
-                case _ => acc
-            }
-
-    def expr(bp: Int32): Tree \ Parse = {
-        match Parse.peek() {
-            case Some(Token.Literal(kind, literal)) => {
+            case Some({ lbp, rbp | _}) if lbp > bpc => {
                 Parse.consume();
-                exprCont(Tree.Literal(kind, literal), bp)
+                exprCont(Tree.Application(Tree.Reference(name), acc :: expr(rbp) :: Nil), bpc)
             }
-            case Some(Token.Identifier(name)) => {
-                Parse.consume();
-                exprCont(Tree.Reference(name), bp)
-            }
-            case Some(Token.Symbol(name)) => match op(name) {
-                case Some({ unary | _}) if unary => {
-                    Parse.consume();
-                    exprCont(Tree.Application(Tree.Reference(name), expr(prefixPower()) :: Nil), bp)
-                }
-                case _ => Tree.Error(None, "Unexpected token ${Token.Symbol(name)}")
-            }
-            case Some(Token.Open(BracketKind.Round)) => {
-                Parse.consume();
-                let tree = expr(0);
-                match Parse.peek() {
-                    case Some(Token.Close(BracketKind.Round)) => {
-                        Parse.consume();
-                        exprCont(tree, bp)
-                    }
-                    case _ => Tree.Error(Some(tree), "missing closing parenthesis")
-                }
-            }
-            case Some(token) => Tree.Error(None, "Unexpected token ${token}")
-            case None => Tree.Error(None, "Unexpected end of input")
+            case _ => acc
         }
+        case _ => acc
     }
 
+    def expr(bp: Int32): Tree \ Parse = match Parse.peek() {
+        case Some(Token.Literal(kind, literal)) => {
+            Parse.consume();
+            exprCont(Tree.Literal(kind, literal), bp)
+        }
+        case Some(Token.Identifier(name)) => {
+            Parse.consume();
+            exprCont(Tree.Reference(name), bp)
+        }
+        case Some(Token.Symbol(name)) => match op(name) {
+            case Some({ unary | _}) if unary => {
+                Parse.consume();
+                exprCont(Tree.Application(Tree.Reference(name), expr(prefixPower()) :: Nil), bp)
+            }
+            case _ => Tree.Error(None, "Unexpected token ${Token.Symbol(name)}")
+        }
+        case Some(Token.Open(BracketKind.Round)) => {
+            Parse.consume();
+            let tree = expr(0);
+            match Parse.peek() {
+                case Some(Token.Close(BracketKind.Round)) => {
+                    Parse.consume();
+                    exprCont(tree, bp)
+                }
+                case _ => Tree.Error(Some(tree), "missing closing parenthesis")
+            }
+        }
+        case Some(token) => Tree.Error(None, "Unexpected token ${token}")
+        case None => Tree.Error(None, "Unexpected end of input")
+    }
 
 }
 
